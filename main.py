@@ -75,27 +75,27 @@ class Measure:
             return 0,0
         if effective_note_number == 1:                                              # only one no break note
             return 1,0
-        else:       
+        else:
             for i in range(0,self.Note_Number()):                            # start at the second note
                 count_intervals = 0
-                if (self.Note_List[i].pitch == 0): 
-                    continue                          
+                if (self.Note_List[i].pitch == 0):
+                    continue
                 hold = ((int)(self.Note_List[i].duration / 0.5) - 1)
                 count_intervals += hold           # consider itself
                 quality += hold * 1
-                scores += [1 * hold] 
-                prev_idx = self.Find_Prev_Note(i) 
+                scores += [1 * hold]
+                prev_idx = self.Find_Prev_Note(i)
                 if prev_idx != None:                        # not end by j < 0
                     delta_pitch = abs(Mode_Convert[self.Note_List[i].pitch] - Mode_Convert[self.Note_List[prev_idx].pitch])
                     count_intervals += 1
                     quality += FITNESS_MAP[delta_pitch]
                     scores.append(FITNESS_MAP[delta_pitch])
-                total_intervals += count_intervals                                                                                                            
+                total_intervals += count_intervals
             average = quality / total_intervals
             variance = Compute_Variance(scores, average)
             return average,variance
 
-    
+
 
 class Piece:
     def __init__(self, ls : list[Measure] = []) -> None:
@@ -129,16 +129,16 @@ class Piece:
             current_measure = self.Get_Random_Measure()
         note_idx = np.random.randint(0, current_measure.Note_Number() - 2)
         return current_measure.At(note_idx), current_measure, note_idx
-    def Mutate(self):                                  
+    def Mutate(self):
         n,_,_ = self.Get_Random_Note()
         n.Mutate()
-    def Cross(mother, father):                         # Here may have some problems 
+    def Cross(mother, father):                         # Here may have some problems
         child = father.copy()                          # generate new piece here should be a shallow copy
         m_mother = mother.Get_Random_Measure()
         m_child = child.Get_Random_Measure()
         m_child = m_mother.copy()                      # here also should be a shallow copy
         return child
-    def Calculate(self):                                 
+    def Calculate(self):
         variance_each_bar = []
         average_each_bar = []
         for measure_idx in range(self.Measure_Number()):
@@ -150,7 +150,7 @@ class Piece:
         self.Average_Each_Bar = average_each_bar
     def Evaluate(self):
         self.Calculate()
-    
+
 
 def Compute_Variance(score : list[int] , average : float):
     ans = 0
@@ -161,13 +161,13 @@ def Compute_Variance(score : list[int] , average : float):
 
 class Population:
     def __init__(self) -> None:                        # the piece in population IS NOT the music21 format , should be converted
-        self.Piece_List = []    
+        self.Piece_List = []
         for i in range(POPULATION_SIZE):
             cur_seq = Produce_Initial_Duration(iteration=5)
             Produce_Initial_Pitch(cur_seq)
             self.Piece_List.append(cur_seq)
 
-    
+
 def Produce_Initial_Duration(measure_number = 4, iteration = 10) -> Piece:
     ret = Piece()
     for i in range(measure_number):
@@ -188,7 +188,7 @@ def Produce_Initial_Duration(measure_number = 4, iteration = 10) -> Piece:
 def Produce_Initial_Pitch(piece : Piece):
     for note in piece.Flatten():
             note.Mutate()
-    
+
 def Note2M21(note : Note):
     if note.pitch == 0:
         m21Rest = m21.note.Rest()
@@ -203,6 +203,18 @@ def Convert2Music21(piece : Piece):
     for note in piece.Flatten():
         score.append(Note2M21(note))
     return score
+
+def Convert2Piece(score):
+    p = Piece([])
+    for measure in score.recurse().getElementsByClass(m21.stream.Measure):
+        cur_m = Measure([])
+        for note in measure.notesAndRests:
+            if note.isRest:
+                cur_m.Note_List.append(Note(0, note.duration.quarterLength))
+            else:
+                cur_m.Note_List.append(Note(Scale_Map.index(note.nameWithOctave), note.duration.quarterLength))
+        p.Measure_List.append(cur_m)
+    return p
 
 if __name__ == '__main__':
     if SCALE_MODE == Pitch_Mode.Tempered_Scale:
@@ -219,8 +231,3 @@ if __name__ == '__main__':
     Produce_Initial_Pitch(Init_Seq)
     Score = Convert2Music21(Init_Seq)
     Init_Seq.Evaluate()
-    print(Init_Seq.Variance_Each_Bar,Init_Seq.Average_Each_Bar)
-    Score.show()
-
-    score01 = m21.converter.parse("ReferenceScore\\01.mid")
-    score01.show()
