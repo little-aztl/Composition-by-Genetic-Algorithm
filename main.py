@@ -231,3 +231,4 @@ if __name__ == '__main__':
     Produce_Initial_Pitch(Init_Seq)
     Score = Convert2Music21(Init_Seq)
     Init_Seq.Evaluate()
+    Score.show('midi')
