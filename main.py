@@ -325,7 +325,7 @@ def Evolution(iteration = 500):
             current_population = ChildBearing(current_population)
             population += current_population
         population = Selection(population)
-        print(f"{population[0].score},{population[1].score},{population[2].score}")
+        print("\tscore = %.2lf" % population[0].score)
     yield population[0]
 
 
