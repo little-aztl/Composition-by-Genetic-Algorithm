@@ -319,13 +319,13 @@ def Initialize_Population(volume = 10) -> list[Piece]:
 def Evolution(iteration = 500):
     population = Initialize_Population()
     for step in range(iteration):
-        print(f"step = {step}")
+        print(f"step = {step}", end = " ")
         current_population = population
         for j in range(100):
             current_population = ChildBearing(current_population)
             population += current_population
         population = Selection(population)
-        print("\tscore = %.2lf" % population[0].score)
+        print("score = %.2lf" % population[0].score)
     yield population[0]
 
 
