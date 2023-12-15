@@ -30,6 +30,7 @@ class Converter:
     @staticmethod
     def Convert2Music21(piece):
         score = m21.stream.Stream()
+        score.append(m21.instrument.Harp())
         for note in piece.Flatten():
             score.append(Converter.Note2M21(note))
         return score
@@ -51,7 +52,7 @@ class Pitch_Mode:
     Pentatonic_Scale = 1
     Major_Scale = 2
 
-SCALE_MODE = Pitch_Mode.Pentatonic_Scale
+SCALE_MODE = Pitch_Mode.Major_Scale
 Scale_Map = []
 
 class Note:
@@ -190,7 +191,7 @@ class Piece:
         intervals = [pitch_pair[1] - pitch_pair[0] for pitch_pair in zip(pitches[:-1], pitches[1:])]
         intervals_count = len(intervals)
         rest_length = sum([note.duration for note in self.Flatten() if note.pitch == 0])
-        if intervals_count <= 10 or rest_length >= 2:
+        if intervals_count <= 15 or rest_length >= 2:
             self.pitch_range = -100
             self.dissonant_intervals = -100
             self.contour_direction = -100
@@ -251,8 +252,9 @@ class Piece:
         self.score += Gaussian.normalized_gauss(0.40, 0.11, self.contour_stability)
         self.score += Gaussian.normalized_gauss(0.24, 0.07, self.rhythmic_variery)
         self.score += Gaussian.normalized_gauss(0.32, 0.11, self.rhythmic_range)
-        self.score += self.Flatten()[-1].duration / 8
-        self.score += (int)(Converter.Convert2Tempered(self.Flatten()[-1].pitch) in [20]) / 4
+        self.score += self.Flatten()[-1].duration / 4
+        if SCALE_MODE != Pitch_Mode.Tempered_Scale:
+            self.score += (int)(Converter.Convert2Tempered(self.Flatten()[-1].pitch) in [20]) / 2
 
 
 def Produce_Initial_Duration(measure_number = 4, iteration = 10) -> Piece:
@@ -314,7 +316,7 @@ def Initialize_Population(volume = 10) -> list[Piece]:
         Produce_Initial_Pitch(p)
     return pieces
 
-def Evolution(iteration = 100):
+def Evolution(iteration = 500):
     population = Initialize_Population()
     for step in range(iteration):
         print(f"step = {step}")
@@ -324,9 +326,7 @@ def Evolution(iteration = 100):
             population += current_population
         population = Selection(population)
         print(f"{population[0].score},{population[1].score},{population[2].score}")
-    for i in range(5):
-        yield population[i]
-
+    yield population[0]
 
 
 if __name__ == '__main__':
@@ -339,4 +339,5 @@ if __name__ == '__main__':
 
     for piece in Evolution():
         s = Converter.Convert2Music21(piece)
-        s.show()
+        s.show('midi')
+        s.write('midi', 'result.mid')
